@@ -1,0 +1,86 @@
+kind: DeploymentConfig
+apiVersion: apps.openshift.io/v1
+metadata:
+  name: router-http-echo
+  namespace: echo
+spec:
+  strategy:
+    type: Rolling
+    rollingParams:
+      updatePeriodSeconds: 1
+      intervalSeconds: 1
+      timeoutSeconds: 600
+      maxUnavailable: 25%
+      maxSurge: 25%
+    resources: {}
+    activeDeadlineSeconds: 21600
+  triggers:
+    - type: ConfigChange
+  replicas: 1
+  revisionHistoryLimit: 10
+  test: false
+  selector:
+    app: router-http-echo
+    deploymentconfig: router-http-echo
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: router-http-echo
+        deploymentconfig: router-http-echo
+    spec:
+      containers:
+        - name: router-http-echo
+          image: >-
+            image-registry.openshift-image-registry.svc:5000/openshift/tools:latest
+          command:
+            - /usr/bin/socat
+            - 'TCP4-LISTEN:8676,reuseaddr,fork'
+            - >-
+              EXEC:'/bin/bash -c \"printf \\\"HTTP/1.0 200 OK\r\n\r\n\\\"; sed
+              -e \\\"/^\r/q\\\"\"'
+          ports:
+            - containerPort: 8676
+              protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: Always
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      securityContext: {}
+      schedulerName: default-scheduler
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: router-http-echo
+  namespace: echo
+  labels:
+    app: router-http-echo
+spec:
+  ports:
+    - name: router-http-echo
+      protocol: TCP
+      port: 8676
+      targetPort: 8676
+  selector:
+    app: router-http-echo
+---
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: echo
+  namespace: echo
+  labels:
+    app: router-http-echo
+spec:
+  host: echo-echo.apps.cluster-l5l2d.l5l2d.sandbox1847.opentlc.com
+  to:
+    kind: Service
+    name: router-http-echo
+    weight: 100
+  port:
+    targetPort: router-http-echo
+  wildcardPolicy: None
