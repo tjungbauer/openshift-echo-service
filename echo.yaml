@@ -2,7 +2,7 @@ kind: DeploymentConfig
 apiVersion: apps.openshift.io/v1
 metadata:
   name: router-http-echo
-  namespace: echo
+  namespace: gitopstest
 spec:
   strategy:
     type: Rolling
@@ -56,7 +56,7 @@ kind: Service
 apiVersion: v1
 metadata:
   name: router-http-echo
-  namespace: echo
+  namespace: gitopstest
   labels:
     app: router-http-echo
 spec:
@@ -72,7 +72,7 @@ kind: Route
 apiVersion: route.openshift.io/v1
 metadata:
   name: echo
-  namespace: echo
+  namespace: gitopstest
   labels:
     app: router-http-echo
 spec:
